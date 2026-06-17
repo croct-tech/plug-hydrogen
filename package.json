@@ -1,47 +1,122 @@
 {
-  "name": "@croct/ts-project",
+  "name": "@croct/plug-hydrogen",
   "version": "0.0.0-dev",
-  "description": "A brief description about the project.",
+  "description": "React components and utilities to plug your Shopify Hydrogen storefronts into Croct.",
   "author": {
     "name": "Croct",
-    "email": "lib+project-ts@croct.com",
-    "url": "https://github.com/croct-tech/project-ts"
+    "url": "https://croct.com",
+    "email": "lib+plug-hydrogen@croct.com"
   },
-  "license": "UNLICENSED",
   "keywords": [
     "croct",
     "personalization",
+    "shopify",
+    "hydrogen",
+    "oxygen",
+    "react",
+    "react-router",
+    "remix",
+    "ecommerce",
+    "ssr",
     "typescript"
   ],
-  "types": "index.d.ts",
-  "main": "index.js",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/croct-tech/project-ts.git"
+    "url": "git+https://github.com/croct-tech/plug-hydrogen.git"
   },
   "bugs": {
-    "url": "https://github.com/croct-tech/project-ts/issues"
+    "url": "https://github.com/croct-tech/plug-hydrogen/issues"
   },
-  "homepage": "https://github.com/croct-tech/project-ts",
+  "homepage": "https://github.com/croct-tech/plug-hydrogen",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./server": {
+      "types": "./server/index.d.ts",
+      "import": "./server/index.js"
+    },
+    "./vite": {
+      "types": "./vite/index.d.ts",
+      "import": "./vite/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",
-    "test": "jest -c jest.config.js --coverage",
+    "lint": "eslint src",
     "validate": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "test": "jest -c jest.config.mjs --coverage",
+    "build": "tsup && tsc -p tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "@remix-run/react": "^2.0.0",
+    "@remix-run/server-runtime": "^2.0.0",
+    "@shopify/hydrogen": ">=2024.1.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "react-router": "^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@remix-run/react": {
+      "optional": true
+    },
+    "@remix-run/server-runtime": {
+      "optional": true
+    },
+    "react-router": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@croct/json": "^2.1.0",
+    "@croct/plug": "^0.23.0",
+    "@croct/plug-react": "^0.17.0",
+    "@croct/sdk": "^0.22.2",
+    "cookie": "^1.1.1"
   },
   "devDependencies": {
-    "@croct/eslint-plugin": "^0.8.0",
-    "@swc/jest": "^0.2.24",
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@babel/preset-react": "^7.29.7",
+    "@babel/preset-typescript": "^7.29.7",
+    "@croct/eslint-plugin": "^0.9.2",
+    "@react-router/dev": "~7.16.0",
+    "@shopify/hydrogen": "^2026.4.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^10.0.0",
-    "jest": "^30.0.0",
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
+    "esbuild-fix-imports-plugin": "^1.0.23",
+    "eslint": "^10.5.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "jest-environment-node": "^30.4.1",
     "jest-extended": "^7.0.0",
-    "ts-node": "^10.8.2",
-    "typescript": "^6.0.0"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router": "~7.16.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.16"
   },
   "files": [
     "**/*.js",
-    "**/*.ts"
+    "**/*.mjs",
+    "**/*.ts",
+    "**/*.map"
   ]
 }
