@@ -31,7 +31,7 @@ jobs:
 
       - name: Prepare release
         run: |-
-          cp LICENSE README.md build/
+          cp LICENSE README.md package.json build/
           cd build
           find . -type f -path '*/*\.js.map' -exec sed -i -e "s~../src~src~" {} +
           sed -i -e "s~\"version\": \"0.0.0-dev\"~\"version\": \"${GITHUB_REF##*/}\"~" package.json
