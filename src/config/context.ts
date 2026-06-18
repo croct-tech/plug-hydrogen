@@ -1,4 +1,7 @@
-import {createContext} from 'react-router';
+// Namespace import on purpose: React Router 6 (Remix-v2) does not export `createContext`, so a named
+// import can fail to resolve at module load. A namespace import requires no specific export to exist,
+// and `createContext` is only ever read lazily below, on the React Router 7 path.
+import * as reactRouter from 'react-router';
 import type {RouterContext, RouterContextProvider} from 'react-router';
 import type {Env} from './env';
 
@@ -35,7 +38,7 @@ let cachedRequestContextKey: RouterContext<RequestContext | null> | null = null;
  * @internal
  */
 export function requestContextKey(): RouterContext<RequestContext | null> {
-    cachedRequestContextKey ??= createContext<RequestContext | null>(null);
+    cachedRequestContextKey ??= reactRouter.createContext<RequestContext | null>(null);
 
     return cachedRequestContextKey;
 }
