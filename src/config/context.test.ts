@@ -4,12 +4,15 @@ import {type CroctContext, getEnv, getRequestContext, type RequestContext} from 
 // The Remix-v2 era runs on React Router 6, which has no `createContext`. Simulate its absence so
 // this suite fails loudly if config/context ever evaluates it at module load instead of lazily —
 // only the React Router 7 middleware needs it.
-jest.mock('react-router', () => ({
-    ...jest.requireActual('react-router'),
-    createContext: jest.fn(() => {
-        throw new TypeError('createContext is not a function');
+jest.mock(
+    'react-router',
+    () => ({
+        ...jest.requireActual('react-router'),
+        createContext: jest.fn(() => {
+            throw new TypeError('createContext is not a function');
+        }),
     }),
-}));
+);
 
 describe('context', () => {
     const request: RequestContext = {
