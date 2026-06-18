@@ -39,9 +39,6 @@ export type CroctOptions = {
 };
 
 /**
- * Assembles the visitor context for a request, minting or reusing the client id and user token, and
- * resolving identity and locale from Shopify.
- *
  * @internal
  */
 export async function resolveRequestContext(
@@ -74,21 +71,6 @@ export async function resolveRequestContext(
 
 /**
  * Writes Croct's visitor cookies on the response.
- *
- * Call it in `server.ts` after Hydrogen commits the session, so the session's `Set-Cookie` header
- * does not overwrite Croct's cookies:
- *
- * ```ts
- * const response = await handleRequest(request);
- *
- * if (hydrogenContext.session.isPending) {
- *     response.headers.set('Set-Cookie', await hydrogenContext.session.commit());
- * }
- *
- * writeCroctCookies(response, hydrogenContext);
- * ```
- *
- * The cookies are not `httpOnly`, so the browser SDK can reuse them.
  */
 export function writeCroctCookies(response: Response, scope: CroctContext): void {
     const request = getRequestContext(scope);

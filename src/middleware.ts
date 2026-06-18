@@ -13,8 +13,7 @@ export type {UserIdResolver, LocaleResolver, ResolverContext, CroctOptions} from
  */
 export function createCroctMiddleware(options: CroctOptions = {}): MiddlewareFunction {
     return async ({request, context}, next) => {
-        // The load context is read-only, so store the request context in React Router's context map.
-        context.set(requestContextKey, await resolveRequestContext(request, context, options));
+        context.set(requestContextKey(), await resolveRequestContext(request, context, options));
 
         return next();
     };

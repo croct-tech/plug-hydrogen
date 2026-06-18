@@ -28,10 +28,6 @@ export type CroctProviderProps = Omit<ReactCroctProviderProps, OmittedProps>
  *   and disables it when consent is withdrawn.
  * - `"always"`: track unconditionally, regardless of consent.
  * - `"never"`: disable automatic tracking entirely; the SDK stays available for manual tracking.
- *
- * The bundled `<CroctAnalytics>` is the source of truth for product views (mapped from Shopify's
- * analytics events), so the SDK's auto-tracking plugin is told to skip `productViewed` to avoid
- * duplicate events.
  */
 export const CroctProvider: FunctionComponent<CroctProviderProps> = props => {
     const {appId = config.appId, children, track = config.track ?? 'auto', plugins, ...rest} = props;

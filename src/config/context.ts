@@ -1,5 +1,5 @@
 import {createContext} from 'react-router';
-import type {RouterContextProvider} from 'react-router';
+import type {RouterContext, RouterContextProvider} from 'react-router';
 import type {Env} from './env';
 
 /**
@@ -17,30 +17,27 @@ export type RequestContext = {
 };
 
 /**
- * The Hydrogen load context — the `context` argument every loader, action, and the `server.ts`
- * fetch handler receive, on either the React Router 7 or the Remix-v2 era.
- *
- * It is intentionally structural so the React Router loader context (`RouterContextProvider`), the
- * Remix `AppLoadContext`, and Hydrogen's own context all satisfy it without a cast. The integration
- * reads the Oxygen `env` from it and the per-request visitor context stored under `croct` — set by
- * the middleware (React Router) or merged into the load context (Remix).
+ * The Hydrogen load context every loader, action, and `server.ts` fetch handler receives.
  */
 export type CroctContext = {
     env: unknown,
     croct?: RequestContext,
 };
 
+let cachedRequestContextKey: RouterContext<RequestContext | null> | null = null;
+
 /**
- * React Router 7 forbids mutating the load context, so the middleware stores the request context in
- * its type-safe context map under this key (an immutable token, like `React.createContext`). The
- * Remix-v2 era has no such map and instead carries the value as a plain `croct` property.
+ * Key the middleware uses to store the request context in React Router's context map.
+ *
+ * Resolved lazily because `createContext` only exists in React Router 7: a Remix-v2 app (React
+ * Router 6) that merely imports this module must never evaluate it — only the middleware does.
  *
  * @internal
  */
-export const requestContextKey = createContext<RequestContext | null>(null);
+export function requestContextKey(): RouterContext<RequestContext | null> {
+    cachedRequestContextKey ??= createContext<RequestContext | null>(null);
 
-function isRouterContext(context: CroctContext): context is RouterContextProvider {
-    return 'get' in context && typeof context.get === 'function';
+    return cachedRequestContextKey;
 }
 
 /**
@@ -51,20 +48,17 @@ export function getEnv(context: CroctContext): Env {
 }
 
 /**
+ * Reads the request context stored by the middleware (React Router) or merged under `croct` (Remix),
+ * returning `null` when missing, unless `required` is set — then it throws a helpful error.
+ *
  * @internal
  */
 export function getRequestContext(context: CroctContext, required?: false): RequestContext | null;
 
-/**
- * @internal
- */
 export function getRequestContext(context: CroctContext, required: true): RequestContext;
 
-/**
- * @internal
- */
 export function getRequestContext(context: CroctContext, required = false): RequestContext | null {
-    const request = (isRouterContext(context) ? context.get(requestContextKey) : context.croct) ?? null;
+    const request = (isRouterContext(context) ? context.get(requestContextKey()) : context.croct) ?? null;
 
     if (request === null && required) {
         throw new Error(
@@ -75,4 +69,8 @@ export function getRequestContext(context: CroctContext, required = false): Requ
     }
 
     return request;
+}
+
+function isRouterContext(context: CroctContext): context is RouterContextProvider {
+    return 'get' in context && typeof context.get === 'function';
 }
