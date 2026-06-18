@@ -30,8 +30,8 @@ export type {UserIdResolver, LocaleResolver, ResolverContext, CroctOptions} from
  */
 export function createCroctContext(
     request: Request,
-    context: ResolverContext,
+    scope: ResolverContext,
     options: CroctOptions = {},
 ): Promise<RequestContext> {
-    return resolveRequestContext(request, context, options);
+    return resolveRequestContext(request, scope, options);
 }

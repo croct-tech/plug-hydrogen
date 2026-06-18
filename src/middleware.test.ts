@@ -3,7 +3,7 @@ import {Token} from '@croct/sdk/token';
 import {RouterContextProvider} from 'react-router';
 import {createCroctMiddleware, type CroctOptions} from './middleware';
 import {writeCroctCookies} from './request';
-import {type CroctContext, type RequestContext} from './config/context';
+import {getRequestContext, type RequestContext} from './config/context';
 
 describe('createCroctMiddleware', () => {
     const APP_ID = '00000000-0000-0000-0000-000000000000';
@@ -19,12 +19,22 @@ describe('createCroctMiddleware', () => {
         env?: Record<string, string | undefined>,
         isLoggedIn?: boolean,
         customerId?: string | null,
-        i18n?: {language: string, country: string},
+        i18n?: {
+            language: string,
+            country: string,
+        },
         options?: CroctOptions,
     };
 
     async function generateApiKey(identifier: string): Promise<ApiKey> {
-        const keyPair = await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify']);
+        const keyPair = await crypto.subtle.generateKey(
+            {
+                name: 'ECDSA',
+                namedCurve: 'P-256',
+            },
+            true,
+            ['sign', 'verify'],
+        );
         const privateKey = Buffer.from(await crypto.subtle.exportKey('pkcs8', keyPair.privateKey))
             .toString('base64');
 
@@ -54,7 +64,10 @@ describe('createCroctMiddleware', () => {
             env = {PUBLIC_CROCT_APP_ID: APP_ID},
             isLoggedIn = false,
             customerId = null,
-            i18n = {language: 'EN', country: 'US'},
+            i18n = {
+                language: 'EN',
+                country: 'US',
+            },
             options,
         } = config;
 
@@ -62,7 +75,10 @@ describe('createCroctMiddleware', () => {
             .map(([key, value]) => `${key}=${value}`)
             .join('; ');
         const request = new Request(url, {
-            headers: {...(cookieHeader !== '' ? {cookie: cookieHeader} : {}), ...headers},
+            headers: {
+                ...(cookieHeader !== '' ? {cookie: cookieHeader} : {}),
+                ...headers,
+            },
         });
 
         const query = jest.fn(() => Promise.resolve({data: {customer: customerId !== null ? {id: customerId} : null}}));
@@ -70,21 +86,31 @@ describe('createCroctMiddleware', () => {
 
         Object.assign(context, {
             env: env,
-            customerAccount: {isLoggedIn: jest.fn(() => Promise.resolve(isLoggedIn)), query: query},
+            customerAccount: {
+                isLoggedIn: jest.fn(() => Promise.resolve(isLoggedIn)),
+                query: query,
+            },
             storefront: {i18n: i18n},
         });
 
         const next = jest.fn(() => Promise.resolve(new Response('ok')));
 
-        await createCroctMiddleware(options)({request: request, context: context, params: {}} as never, next);
+        await createCroctMiddleware(options)(
+            {
+                request: request,
+                context: context,
+                params: {},
+            } as never,
+            next,
+        );
 
         // Simulate server.ts writing the cookies after the session is committed.
         const response = new Response('ok');
 
-        writeCroctCookies(response, context as unknown as CroctContext);
+        writeCroctCookies(response, context);
 
         return {
-            request: (context as unknown as {croct: RequestContext}).croct,
+            request: getRequestContext(context, true),
             setCookies: response.headers.getSetCookie(),
             next: next,
             query: query,
@@ -118,7 +144,10 @@ describe('createCroctMiddleware', () => {
         const clientId = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
         const {request, query} = await run({
-            cookies: {'ct.client_id': clientId, 'ct.user_token': token},
+            cookies: {
+                'ct.client_id': clientId,
+                'ct.user_token': token,
+            },
         });
 
         expect(request.clientId).toBe(clientId);
@@ -142,7 +171,10 @@ describe('createCroctMiddleware', () => {
     });
 
     it('should return null identity when the customer query has no customer', async () => {
-        const {request} = await run({isLoggedIn: true, customerId: null});
+        const {request} = await run({
+            isLoggedIn: true,
+            customerId: null,
+        });
 
         expect(Token.parse(request.userToken).isAnonymous()).toBe(true);
     });
@@ -166,7 +198,12 @@ describe('createCroctMiddleware', () => {
     });
 
     it('should capture the user agent and referrer', async () => {
-        const {request} = await run({headers: {'user-agent': 'UA', referer: 'https://ref'}});
+        const {request} = await run({
+            headers: {
+                'user-agent': 'UA',
+                referer: 'https://ref',
+            },
+        });
 
         expect(request.clientAgent).toBe('UA');
         expect(request.referrer).toBe('https://ref');
@@ -253,7 +290,10 @@ describe('createCroctMiddleware', () => {
             .withDuration(3600)
             .toString();
         const {request} = await run({
-            env: {PUBLIC_CROCT_APP_ID: APP_ID, CROCT_API_KEY: apiKey.export()},
+            env: {
+                PUBLIC_CROCT_APP_ID: APP_ID,
+                CROCT_API_KEY: apiKey.export(),
+            },
             cookies: {'ct.user_token': token},
         });
 
@@ -270,7 +310,10 @@ describe('createCroctMiddleware', () => {
             .signedWith(foreignKey);
 
         const {request} = await run({
-            env: {PUBLIC_CROCT_APP_ID: APP_ID, CROCT_API_KEY: apiKey.export()},
+            env: {
+                PUBLIC_CROCT_APP_ID: APP_ID,
+                CROCT_API_KEY: apiKey.export(),
+            },
             cookies: {'ct.user_token': token.toString()},
             isLoggedIn: true,
             customerId: 'user-id',
@@ -291,7 +334,10 @@ describe('createCroctMiddleware', () => {
             .signedWith(foreignKey);
 
         const {request} = await run({
-            env: {PUBLIC_CROCT_APP_ID: APP_ID, CROCT_API_KEY: apiKey.export()},
+            env: {
+                PUBLIC_CROCT_APP_ID: APP_ID,
+                CROCT_API_KEY: apiKey.export(),
+            },
             cookies: {'ct.user_token': token.toString()},
         });
 

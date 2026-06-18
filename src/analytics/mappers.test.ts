@@ -53,7 +53,10 @@ describe('analytics mappers', () => {
         it('should map a cart with its lines', () => {
             const cart = {
                 cost: {
-                    totalAmount: {amount: '120.00', currencyCode: 'USD'},
+                    totalAmount: {
+                        amount: '120.00',
+                        currencyCode: 'USD',
+                    },
                     subtotalAmount: {amount: '100.00'},
                 },
                 lines: {
@@ -65,8 +68,16 @@ describe('analytics mappers', () => {
                                 id: 'v1',
                                 title: 'Red',
                                 sku: 'SKU-1',
-                                price: {amount: '40.00', currencyCode: 'USD'},
-                                product: {id: 'p1', title: 'Shoe', vendor: 'Acme', productType: 'Footwear'},
+                                price: {
+                                    amount: '40.00',
+                                    currencyCode: 'USD',
+                                },
+                                product: {
+                                    id: 'p1',
+                                    title: 'Shoe',
+                                    vendor: 'Acme',
+                                    productType: 'Footwear',
+                                },
                             },
                         },
                         {
@@ -76,8 +87,16 @@ describe('analytics mappers', () => {
                                 id: 'v2',
                                 title: 'Blue',
                                 sku: null,
-                                price: {amount: '40.00', currencyCode: 'USD'},
-                                product: {id: 'p2', title: 'Bag', vendor: '', productType: ''},
+                                price: {
+                                    amount: '40.00',
+                                    currencyCode: 'USD',
+                                },
+                                product: {
+                                    id: 'p2',
+                                    title: 'Bag',
+                                    vendor: '',
+                                    productType: '',
+                                },
                             },
                         },
                     ],

@@ -25,7 +25,10 @@ jest.mock('@croct/plug-react/hooks', () => ({useCroct: jest.fn()}));
 describe('CroctAnalytics', () => {
     type Subscriptions = Map<string, (payload: unknown) => void>;
 
-    type Tracker = {enable: jest.Mock, disable: jest.Mock};
+    type Tracker = {
+        enable: jest.Mock,
+        disable: jest.Mock,
+    };
 
     function setup(allowed = true, tracking: 'auto' | 'always' = 'auto'): {
         subscriptions: Subscriptions,
@@ -37,24 +40,42 @@ describe('CroctAnalytics', () => {
         const subscriptions: Subscriptions = new Map();
         const ready = jest.fn();
         const track = jest.fn();
-        const tracker: Tracker = {enable: jest.fn(), disable: jest.fn()};
+        const tracker: Tracker = {
+            enable: jest.fn(),
+            disable: jest.fn(),
+        };
         const canTrack = jest.fn(() => allowed);
 
-        (useAnalytics as jest.Mock).mockReturnValue({
+        jest.mocked(useAnalytics).mockReturnValue({
             subscribe: (event: string, callback: (payload: unknown) => void) => subscriptions.set(event, callback),
             register: () => ({ready: ready}),
             canTrack: canTrack,
             customerPrivacy: {},
-        });
-        (useCroct as jest.Mock).mockReturnValue({track: track, tracker: tracker});
+        } as unknown as ReturnType<typeof useAnalytics>);
+        jest.mocked(useCroct).mockReturnValue({
+            track: track,
+            tracker: tracker,
+        } as unknown as ReturnType<typeof useCroct>);
 
         render(<CroctAnalytics tracking={tracking} />);
 
-        return {subscriptions: subscriptions, ready: ready, track: track, tracker: tracker, canTrack: canTrack};
+        return {
+            subscriptions: subscriptions,
+            ready: ready,
+            track: track,
+            tracker: tracker,
+            canTrack: canTrack,
+        };
     }
 
     const cart = {
-        cost: {totalAmount: {amount: '10', currencyCode: 'USD'}, subtotalAmount: {amount: '10'}},
+        cost: {
+            totalAmount: {
+                amount: '10',
+                currencyCode: 'USD',
+            },
+            subtotalAmount: {amount: '10'},
+        },
         lines: {nodes: []},
     };
 
@@ -75,19 +96,32 @@ describe('CroctAnalytics', () => {
         const {subscriptions, track} = setup();
 
         subscriptions.get('product_viewed')!({
-            products: [{id: 'p1', title: 'Shoe', price: '10', vendor: '', variantTitle: '', quantity: 1}],
+            products: [{
+                id: 'p1',
+                title: 'Shoe',
+                price: '10',
+                vendor: '',
+                variantTitle: '',
+                quantity: 1,
+            }],
             shop: {currency: 'USD'},
         });
 
         expect(track).toHaveBeenCalledWith('productViewed', {
-            product: expect.objectContaining({productId: 'p1', currency: 'USD'}),
+            product: expect.objectContaining({
+                productId: 'p1',
+                currency: 'USD',
+            }),
         });
     });
 
     it('should skip a product view without a product', () => {
         const {subscriptions, track} = setup();
 
-        subscriptions.get('product_viewed')!({products: [], shop: null});
+        subscriptions.get('product_viewed')!({
+            products: [],
+            shop: null,
+        });
 
         expect(track).not.toHaveBeenCalled();
     });
@@ -114,7 +148,12 @@ describe('CroctAnalytics', () => {
     it('should track collection and search views as interests', () => {
         const {subscriptions, track} = setup();
 
-        subscriptions.get('collection_viewed')!({collection: {id: 'c1', handle: 'shoes'}});
+        subscriptions.get('collection_viewed')!({
+            collection: {
+                id: 'c1',
+                handle: 'shoes',
+            },
+        });
         subscriptions.get('search_viewed')!({searchTerm: 'boots'});
 
         expect(track).toHaveBeenCalledWith('interestShown', {interests: ['shoes']});
@@ -125,12 +164,24 @@ describe('CroctAnalytics', () => {
         const {subscriptions, track} = setup(false);
 
         subscriptions.get('product_viewed')!({
-            products: [{id: 'p1', title: 'Shoe', price: '10', vendor: '', variantTitle: '', quantity: 1}],
+            products: [{
+                id: 'p1',
+                title: 'Shoe',
+                price: '10',
+                vendor: '',
+                variantTitle: '',
+                quantity: 1,
+            }],
             shop: null,
         });
         subscriptions.get('cart_viewed')!({cart: cart});
         subscriptions.get('cart_updated')!({cart: cart});
-        subscriptions.get('collection_viewed')!({collection: {id: 'c1', handle: 'shoes'}});
+        subscriptions.get('collection_viewed')!({
+            collection: {
+                id: 'c1',
+                handle: 'shoes',
+            },
+        });
         subscriptions.get('search_viewed')!({searchTerm: 'boots'});
 
         expect(track).not.toHaveBeenCalled();
@@ -165,7 +216,14 @@ describe('CroctAnalytics', () => {
         const {subscriptions, track} = setup(false, 'always');
 
         subscriptions.get('product_viewed')!({
-            products: [{id: 'p1', title: 'Shoe', price: '10', vendor: '', variantTitle: '', quantity: 1}],
+            products: [{
+                id: 'p1',
+                title: 'Shoe',
+                price: '10',
+                vendor: '',
+                variantTitle: '',
+                quantity: 1,
+            }],
             shop: {currency: 'USD'},
         });
 

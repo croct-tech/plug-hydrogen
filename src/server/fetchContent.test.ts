@@ -1,3 +1,4 @@
+import {fetchContent as loadFromApi} from '@croct/plug-react/api';
 import {ApiKey} from '@croct/sdk/apiKey';
 import type {Env} from '../config/env';
 import {type CroctContext, type RequestContext} from '../config/context';
@@ -17,7 +18,7 @@ describe('fetchContent', () => {
         + 'TbbvRM7DNwxY3XGWDmlSRPSfZ9b+ch9TO3jQ68Zyj+hRANCAASmJj/EiEhUaLAWnbXMTb/85WADkuFgoELGZ5ByV7YPlbb2wY6oLjzGk'
         + 'pF6z8iDrvJ4kV6EhaJ4n0HwSQckVLNE';
 
-    const loadContent = jest.requireMock('@croct/plug-react/api').fetchContent as jest.Mock;
+    const loadContent = jest.mocked(loadFromApi);
     const original = process.env.NODE_ENV;
 
     const baseRequest: RequestContext = {
@@ -31,12 +32,20 @@ describe('fetchContent', () => {
         previewToken: null,
     };
 
-    function createContext(env: Env, request: RequestContext = baseRequest): CroctContext {
-        return {env: env, croct: request};
+    function createScope(env: Env, request: RequestContext = baseRequest): CroctContext {
+        return {
+            env: env,
+            croct: request,
+        };
     }
 
     beforeEach(() => {
-        loadContent.mockResolvedValue({content: {headline: 'Hi'}});
+        loadContent.mockResolvedValue({
+            content: {
+                headline: 'Hi',
+                _component: null,
+            },
+        });
         process.env.NODE_ENV = 'development';
     });
 
@@ -47,7 +56,7 @@ describe('fetchContent', () => {
     it('should forward the full request context to the SDK', async () => {
         process.env.NODE_ENV = 'production';
 
-        const context = createContext(
+        const scope = createScope(
             {
                 PUBLIC_CROCT_APP_ID: APP_ID,
                 CROCT_API_KEY: API_KEY,
@@ -66,9 +75,14 @@ describe('fetchContent', () => {
             },
         );
 
-        const result = await fetchContent('home-banner', {context: context});
+        const result = await fetchContent('home-banner', {scope: scope});
 
-        expect(result).toEqual({content: {headline: 'Hi'}});
+        expect(result).toEqual({
+            content: {
+                headline: 'Hi',
+                _component: null,
+            },
+        });
         expect(loadContent).toHaveBeenCalledWith('home-banner', expect.objectContaining({
             apiKey: expect.any(ApiKey),
             clientId: 'cid',
@@ -80,37 +94,86 @@ describe('fetchContent', () => {
             baseEndpointUrl: 'https://api',
             timeout: 2000,
             extra: {cache: 'no-store'},
-            context: {page: {url: 'https://example.com/page', referrer: 'https://ref'}},
+            context: {
+                page: {
+                    url: 'https://example.com/page',
+                    referrer: 'https://ref',
+                },
+            },
         }));
     });
 
+    it('should merge the provided evaluation context with the derived page', async () => {
+        const scope = createScope({
+            PUBLIC_CROCT_APP_ID: APP_ID,
+            CROCT_API_KEY: API_KEY,
+        });
+
+        await fetchContent('home-banner', {
+            scope: scope,
+            context: {
+                attributes: {plan: 'pro'},
+                page: {
+                    url: 'https://ignored',
+                    title: 'Home',
+                },
+            },
+        });
+
+        expect(loadContent.mock.calls[0][1]).toHaveProperty('context', {
+            attributes: {plan: 'pro'},
+            page: {
+                url: 'https://example.com/',
+                title: 'Home',
+            },
+        });
+    });
+
     it('should fall back to defaults for a bare request context', async () => {
-        const context = createContext({PUBLIC_CROCT_APP_ID: APP_ID, CROCT_API_KEY: API_KEY});
-        const logger = {log: jest.fn(), debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn()};
+        const scope = createScope({
+            PUBLIC_CROCT_APP_ID: APP_ID,
+            CROCT_API_KEY: API_KEY,
+        });
+        const logger = {
+            log: jest.fn(),
+            debug: jest.fn(),
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+        };
 
-        await fetchContent('home-banner', {context: context, logger: logger});
+        await fetchContent('home-banner', {
+            scope: scope,
+            logger: logger,
+        });
 
-        const options = loadContent.mock.calls[0][1];
+        const options = loadContent.mock.calls[0][1]!;
 
-        expect(options.clientIp).toBe('127.0.0.1');
+        expect(options).toHaveProperty('clientIp', '127.0.0.1');
         expect(options.logger).toBe(logger);
         expect(options).not.toHaveProperty('clientAgent');
         expect(options).not.toHaveProperty('previewToken');
         expect(options).not.toHaveProperty('preferredLocale');
         expect(options).not.toHaveProperty('baseEndpointUrl');
         expect(options).not.toHaveProperty('timeout');
-        expect(options.context).toEqual({page: {url: 'https://example.com/'}});
+        expect(options).toHaveProperty('context', {page: {url: 'https://example.com/'}});
     });
 
     it('should exclude an exiting preview token and use the filtered logger', async () => {
-        const context = createContext({PUBLIC_CROCT_APP_ID: APP_ID, CROCT_API_KEY: API_KEY}, {
-            ...baseRequest,
-            previewToken: 'exit',
-        });
+        const scope = createScope(
+            {
+                PUBLIC_CROCT_APP_ID: APP_ID,
+                CROCT_API_KEY: API_KEY,
+            },
+            {
+                ...baseRequest,
+                previewToken: 'exit',
+            },
+        );
 
-        await fetchContent('home-banner', {context: context});
+        await fetchContent('home-banner', {scope: scope});
 
-        const options = loadContent.mock.calls[0][1];
+        const options = loadContent.mock.calls[0][1]!;
 
         expect(options).not.toHaveProperty('previewToken');
         expect(options.logger).toBeDefined();

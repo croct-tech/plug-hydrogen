@@ -21,11 +21,13 @@ describe('cookie', () => {
         });
 
         it('should apply custom name, duration and domain', () => {
-            expect(getClientIdCookieOptions({
+            const options = getClientIdCookieOptions({
                 PUBLIC_CROCT_CLIENT_ID_COOKIE_NAME: 'cid',
                 PUBLIC_CROCT_CLIENT_ID_COOKIE_DURATION: '10',
                 PUBLIC_CROCT_CLIENT_ID_COOKIE_DOMAIN: 'example.com',
-            })).toEqual({
+            });
+
+            expect(options).toEqual({
                 name: 'cid',
                 maxAge: 10,
                 path: '/',
@@ -60,11 +62,13 @@ describe('cookie', () => {
         });
 
         it('should apply custom name, duration and domain', () => {
-            expect(getUserTokenCookieOptions({
+            const options = getUserTokenCookieOptions({
                 PUBLIC_CROCT_USER_TOKEN_COOKIE_NAME: 'ut',
                 PUBLIC_CROCT_USER_TOKEN_COOKIE_DURATION: '20',
                 PUBLIC_CROCT_USER_TOKEN_COOKIE_DOMAIN: 'example.com',
-            })).toEqual({
+            });
+
+            expect(options).toEqual({
                 name: 'ut',
                 maxAge: 20,
                 path: '/',
@@ -87,10 +91,12 @@ describe('cookie', () => {
         });
 
         it('should apply custom name and domain', () => {
-            expect(getPreviewCookieOptions({
+            const options = getPreviewCookieOptions({
                 PUBLIC_CROCT_PREVIEW_TOKEN_COOKIE_NAME: 'pt',
                 PUBLIC_CROCT_PREVIEW_TOKEN_COOKIE_DOMAIN: 'example.com',
-            })).toEqual({
+            });
+
+            expect(options).toEqual({
                 name: 'pt',
                 path: '/',
                 domain: 'example.com',

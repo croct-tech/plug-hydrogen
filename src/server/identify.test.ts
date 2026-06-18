@@ -18,7 +18,10 @@ describe('identify', () => {
     };
 
     function createContext(env: Env, request: RequestContext): CroctContext {
-        return {env: env, croct: request};
+        return {
+            env: env,
+            croct: request,
+        };
     }
 
     it('should re-issue the user token for the given user', async () => {

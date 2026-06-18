@@ -1,29 +1,60 @@
 /**
  * @jest-environment jsdom
  */
+import type {ReactNode} from 'react';
 import {render} from '@testing-library/react';
 
 describe('CroctProvider', () => {
     const cookie = {
-        clientId: {name: 'ct.client_id', path: '/'},
-        userToken: {name: 'ct.user_token', path: '/'},
-        previewToken: {name: 'ct.preview_token', path: '/'},
+        clientId: {
+            name: 'ct.client_id',
+            path: '/',
+        },
+        userToken: {
+            name: 'ct.user_token',
+            path: '/',
+        },
+        previewToken: {
+            name: 'ct.preview_token',
+            path: '/',
+        },
     };
 
-    function renderWith(config: unknown, props: Record<string, unknown> = {}): Record<string, unknown> {
-        let captured: Record<string, unknown> = {};
+    function renderWith(config: unknown, props: Record<string, unknown> = {}): {
+        provider: Record<string, unknown>,
+        analytics: Record<string, unknown> | null,
+    } {
+        let provider: Record<string, unknown> = {};
+        let analytics: Record<string, unknown> | null = null;
 
         jest.isolateModules(() => {
-            jest.doMock('virtual:croct/config', () => ({__esModule: true, default: config}), {virtual: true});
-            jest.doMock('./analytics/CroctAnalytics', () => ({__esModule: true, CroctAnalytics: () => null}));
+            jest.doMock(
+                'virtual:croct/config',
+                () => ({
+                    __esModule: true,
+                    default: config,
+                }),
+                {virtual: true},
+            );
+            jest.doMock(
+                './analytics/CroctAnalytics',
+                () => ({
+                    __esModule: true,
+                    CroctAnalytics: (received: Record<string, unknown>) => {
+                        analytics = received;
+
+                        return null;
+                    },
+                }),
+            );
             jest.doMock(
                 '@croct/plug-react/CroctProvider',
                 () => ({
                     __esModule: true,
-                    CroctProvider: (received: Record<string, unknown>) => {
-                        captured = received;
+                    CroctProvider: (received: {children?: ReactNode}) => {
+                        provider = received;
 
-                        return null;
+                        return received.children;
                     },
                 }),
             );
@@ -34,11 +65,14 @@ describe('CroctProvider', () => {
             render(<CroctProvider {...props}><span>child</span></CroctProvider>);
         });
 
-        return captured;
+        return {
+            provider: provider,
+            analytics: analytics,
+        };
     }
 
     it('should forward the full configuration to the React provider', () => {
-        const props = renderWith({
+        const {provider} = renderWith({
             appId: 'config-app-id',
             debug: true,
             test: true,
@@ -48,7 +82,7 @@ describe('CroctProvider', () => {
             cookie: cookie,
         });
 
-        expect(props).toMatchObject({
+        expect(provider).toMatchObject({
             appId: 'config-app-id',
             disableCidMirroring: true,
             debug: true,
@@ -61,42 +95,125 @@ describe('CroctProvider', () => {
     });
 
     it('should omit optional fields when they are unset', () => {
-        const props = renderWith({appId: 'config-app-id', debug: false, test: false, cookie: cookie});
+        const {provider} = renderWith({
+            appId: 'config-app-id',
+            debug: false,
+            test: false,
+            cookie: cookie,
+        });
 
-        expect(props.appId).toBe('config-app-id');
-        expect(props.disableCidMirroring).toBe(true);
-        expect(props).not.toHaveProperty('debug');
-        expect(props).not.toHaveProperty('test');
-        expect(props).not.toHaveProperty('baseEndpointUrl');
-        expect(props).not.toHaveProperty('defaultPreferredLocale');
-        expect(props).not.toHaveProperty('defaultFetchTimeout');
+        expect(provider.appId).toBe('config-app-id');
+        expect(provider.disableCidMirroring).toBe(true);
+        expect(provider).not.toHaveProperty('debug');
+        expect(provider).not.toHaveProperty('test');
+        expect(provider).not.toHaveProperty('baseEndpointUrl');
+        expect(provider).not.toHaveProperty('defaultPreferredLocale');
+        expect(provider).not.toHaveProperty('defaultFetchTimeout');
     });
 
     it('should allow overriding the application id', () => {
-        const props = renderWith(
-            {appId: 'config-app-id', debug: false, test: false, cookie: cookie},
+        const {provider} = renderWith(
+            {
+                appId: 'config-app-id',
+                debug: false,
+                test: false,
+                cookie: cookie,
+            },
             {appId: 'override-app-id'},
         );
 
-        expect(props.appId).toBe('override-app-id');
+        expect(provider.appId).toBe('override-app-id');
     });
 
-    it('should disable tracking in the default (auto) tracking mode', () => {
-        const props = renderWith({appId: 'app', cookie: cookie});
+    it('should align tracking with consent in the default (auto) mode', () => {
+        const {provider, analytics} = renderWith({
+            appId: 'app',
+            cookie: cookie,
+        });
 
-        expect(props.track).toBe(false);
+        expect(provider.track).toBe(false);
+        expect(analytics).toEqual({tracking: 'auto'});
     });
 
-    it('should respect the track prop in the always tracking mode', () => {
-        const props = renderWith({appId: 'app', cookie: cookie}, {tracking: 'always', track: true});
+    it('should track unconditionally in the always mode', () => {
+        const {provider, analytics} = renderWith(
+            {
+                appId: 'app',
+                cookie: cookie,
+            },
+            {track: 'always'},
+        );
 
-        expect(props.track).toBe(true);
+        expect(provider.track).toBe(true);
+        expect(analytics).toEqual({tracking: 'always'});
     });
 
-    it('should omit the track prop in the always tracking mode when it is unset', () => {
-        const props = renderWith({appId: 'app', cookie: cookie}, {tracking: 'always'});
+    it('should not render the analytics bridge in the never mode', () => {
+        const {provider, analytics} = renderWith(
+            {
+                appId: 'app',
+                cookie: cookie,
+            },
+            {track: 'never'},
+        );
 
-        // The SDK rejects an explicit `track: undefined`, so it must be omitted to fall back to its default.
-        expect(props).not.toHaveProperty('track');
+        expect(provider.track).toBe(false);
+        expect(analytics).toBeNull();
+    });
+
+    it('should default the tracking mode to the baked configuration', () => {
+        const {provider, analytics} = renderWith({
+            appId: 'app',
+            track: 'always',
+            cookie: cookie,
+        });
+
+        expect(provider.track).toBe(true);
+        expect(analytics).toEqual({tracking: 'always'});
+    });
+
+    it('should let the track prop override the baked tracking mode', () => {
+        const {provider} = renderWith(
+            {
+                appId: 'app',
+                track: 'always',
+                cookie: cookie,
+            },
+            {track: 'auto'},
+        );
+
+        expect(provider.track).toBe(false);
+    });
+
+    it('should disable the plugin product-viewed auto-tracking to avoid duplicates', () => {
+        const {provider} = renderWith({
+            appId: 'app',
+            cookie: cookie,
+        });
+
+        expect(provider.plugins).toEqual({autoTracking: {disableProductViewed: true}});
+    });
+
+    it('should merge user-provided plugins and auto-tracking options', () => {
+        const {provider} = renderWith(
+            {
+                appId: 'app',
+                cookie: cookie,
+            },
+            {
+                plugins: {
+                    customPlugin: {enabled: true},
+                    autoTracking: {disableLinkOpened: true},
+                },
+            },
+        );
+
+        expect(provider.plugins).toEqual({
+            customPlugin: {enabled: true},
+            autoTracking: {
+                disableProductViewed: true,
+                disableLinkOpened: true,
+            },
+        });
     });
 });

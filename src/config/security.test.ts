@@ -14,8 +14,18 @@ describe('security', () => {
         + '8Zyj+hRANCAASmJj/EiEhUaLAWnbXMTb/85WADkuFgoELGZ5ByV7YPlbb2wY6oLjzGkpF6z8iDrvJ4kV6EhaJ4n0HwSQckVLNE';
     const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-    async function generateApiKey(): Promise<{apiKey: ApiKey, keyPair: CryptoKeyPair}> {
-        const keyPair = await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify']);
+    async function generateApiKey(): Promise<{
+        apiKey: ApiKey,
+        keyPair: CryptoKeyPair,
+    }> {
+        const keyPair = await crypto.subtle.generateKey(
+            {
+                name: 'ECDSA',
+                namedCurve: 'P-256',
+            },
+            true,
+            ['sign', 'verify'],
+        );
         const localPrivateKey = Buffer
             .from(await crypto.subtle.exportKey('pkcs8', keyPair.privateKey))
             .toString('base64');
@@ -71,10 +81,12 @@ describe('security', () => {
         });
 
         it('should return false when explicitly disabled', () => {
-            expect(isUserTokenAuthenticationEnabled({
+            const enabled = isUserTokenAuthenticationEnabled({
                 CROCT_API_KEY: key,
                 CROCT_DISABLE_USER_TOKEN_AUTHENTICATION: 'true',
-            })).toBe(false);
+            });
+
+            expect(enabled).toBe(false);
         });
     });
 
@@ -117,7 +129,10 @@ describe('security', () => {
 
             const [header, payload, signature] = token.toString().split('.');
             const verification = crypto.subtle.verify(
-                {name: 'ECDSA', hash: {name: 'SHA-256'}},
+                {
+                    name: 'ECDSA',
+                    hash: {name: 'SHA-256'},
+                },
                 keyPair.publicKey,
                 Buffer.from(signature, 'base64url'),
                 Buffer.from(`${header}.${payload}`),
@@ -128,7 +143,13 @@ describe('security', () => {
 
         it('should issue a signed anonymous token', async () => {
             const {apiKey} = await generateApiKey();
-            const token = await issueToken({PUBLIC_CROCT_APP_ID: appId, CROCT_API_KEY: apiKey.export()}, null);
+            const token = await issueToken(
+                {
+                    PUBLIC_CROCT_APP_ID: appId,
+                    CROCT_API_KEY: apiKey.export(),
+                },
+                null,
+            );
 
             expect(token.isAnonymous()).toBe(true);
             expect(token.isSigned()).toBe(true);
@@ -137,7 +158,10 @@ describe('security', () => {
         it('should preserve the given token ID', async () => {
             const {apiKey} = await generateApiKey();
             const token = await issueToken(
-                {PUBLIC_CROCT_APP_ID: appId, CROCT_API_KEY: apiKey.export()},
+                {
+                    PUBLIC_CROCT_APP_ID: appId,
+                    CROCT_API_KEY: apiKey.export(),
+                },
                 'user-id',
                 '11111111-2222-3333-4444-555555555555',
             );

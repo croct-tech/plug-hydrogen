@@ -1,6 +1,5 @@
 import type {MiddlewareFunction} from 'react-router';
-import type {HydrogenRouterContextProvider} from '@shopify/hydrogen';
-import type {RequestContext} from './config/context';
+import {requestContextKey} from './config/context';
 import {type CroctOptions, resolveRequestContext} from './request';
 
 export type {UserIdResolver, LocaleResolver, ResolverContext, CroctOptions} from './request';
@@ -14,11 +13,8 @@ export type {UserIdResolver, LocaleResolver, ResolverContext, CroctOptions} from
  */
 export function createCroctMiddleware(options: CroctOptions = {}): MiddlewareFunction {
     return async ({request, context}, next) => {
-        const hydrogen = context as unknown as HydrogenRouterContextProvider;
-        const requestContext = await resolveRequestContext(request, hydrogen, options);
-
-        // Carry the request context on the load context, mirroring the Remix era's `croct` property.
-        (context as unknown as {croct: RequestContext}).croct = requestContext;
+        // The load context is read-only, so store the request context in React Router's context map.
+        context.set(requestContextKey, await resolveRequestContext(request, context, options));
 
         return next();
     };

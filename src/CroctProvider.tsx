@@ -3,21 +3,14 @@ import {CroctProvider as ReactCroctProvider} from '@croct/plug-react/CroctProvid
 import type {FunctionComponent} from 'react';
 import config from 'virtual:croct/config';
 import {CroctAnalytics} from './analytics/CroctAnalytics';
+import type {TrackingMode} from './config/tracking';
 
-type OmittedProps = 'appId' | 'disableCidMirroring' | 'cidAssignerEndpointUrl';
+type OmittedProps = 'appId' | 'disableCidMirroring' | 'cidAssignerEndpointUrl' | 'track';
 
 export type CroctProviderProps = Omit<ReactCroctProviderProps, OmittedProps>
     & Partial<Pick<ReactCroctProviderProps, 'appId'>>
     & {
-        /**
-         * How Croct's tracking is governed.
-         *
-         * - `auto` (default): aligned with the Shopify Customer Privacy consent — tracking is
-         *   enabled only while `canTrack()` allows it.
-         * - `always`: Croct manages tracking itself (enabled by default; control it with `track` or
-         *   `croct.tracker`), ignoring the Shopify consent.
-         */
-        tracking?: 'auto' | 'always',
+        track?: TrackingMode,
     };
 
 /**
@@ -27,20 +20,35 @@ export type CroctProviderProps = Omit<ReactCroctProviderProps, OmittedProps>
  * storefront events. The application id and the remaining settings are baked into the bundle by the
  * `croct()` Vite plugin.
  *
- * By default tracking follows the Shopify Customer Privacy consent: it starts disabled and the
- * bundled `<CroctAnalytics>` enables it once consent allows (re-firing the initial `pageOpened`) and
- * disables it when consent is withdrawn. Set `tracking="always"` to opt out of that alignment.
+ * The `track` prop controls automatic tracking and defaults to the `PUBLIC_CROCT_TRACK` environment
+ * variable (or `"auto"` when unset):
+ *
+ * - `"auto"` (default): tracking follows the Shopify Customer Privacy consent. It starts disabled and
+ *   the bundled `<CroctAnalytics>` enables it once consent allows (re-firing the initial `pageOpened`)
+ *   and disables it when consent is withdrawn.
+ * - `"always"`: track unconditionally, regardless of consent.
+ * - `"never"`: disable automatic tracking entirely; the SDK stays available for manual tracking.
+ *
+ * The bundled `<CroctAnalytics>` is the source of truth for product views (mapped from Shopify's
+ * analytics events), so the SDK's auto-tracking plugin is told to skip `productViewed` to avoid
+ * duplicate events.
  */
 export const CroctProvider: FunctionComponent<CroctProviderProps> = props => {
-    const {appId = config.appId, children, tracking = 'auto', track, ...rest} = props;
+    const {appId = config.appId, children, track = config.track ?? 'auto', plugins, ...rest} = props;
     const {debug, test, baseEndpointUrl, defaultPreferredLocale, defaultFetchTimeout, cookie} = config;
 
     return (
         <ReactCroctProvider
             appId={appId}
             disableCidMirroring
-            {...(tracking === 'auto' && {track: false})}
-            {...(tracking !== 'auto' && track !== undefined && {track: track})}
+            track={track === 'always'}
+            plugins={{
+                ...plugins,
+                autoTracking: {
+                    disableProductViewed: true,
+                    ...plugins?.autoTracking,
+                },
+            }}
             {...(debug && {debug: true})}
             {...(test && {test: true})}
             {...(baseEndpointUrl !== undefined && {baseEndpointUrl: baseEndpointUrl})}
@@ -49,7 +57,7 @@ export const CroctProvider: FunctionComponent<CroctProviderProps> = props => {
             cookie={cookie}
             {...rest}
         >
-            <CroctAnalytics tracking={tracking} />
+            {track !== 'never' && <CroctAnalytics tracking={track} />}
             {children}
         </ReactCroctProvider>
     );

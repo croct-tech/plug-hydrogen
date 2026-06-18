@@ -6,7 +6,7 @@ import type {CookieOptions} from './config/cookie';
 import {getClientIdCookieOptions, getPreviewCookieOptions, getUserTokenCookieOptions} from './config/cookie';
 import {getAppId} from './config/appId';
 import {getAuthenticationKey, issueToken, isUserTokenAuthenticationEnabled} from './config/security';
-import {type CroctContext, type RequestContext, getEnv} from './config/context';
+import {type CroctContext, type RequestContext, getEnv, getRequestContext} from './config/context';
 
 const CLIENT_ID_PATTERN = /^(?:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|[a-f0-9]{32})$/;
 const PREVIEW_QUERY_PARAMETER = 'croct-preview';
@@ -90,8 +90,8 @@ export async function resolveRequestContext(
  *
  * The cookies are not `httpOnly`, so the browser SDK can reuse them.
  */
-export function writeCroctCookies(response: Response, context: CroctContext): void {
-    const request = context.croct ?? null;
+export function writeCroctCookies(response: Response, scope: CroctContext): void {
+    const request = getRequestContext(scope);
 
     if (request === null) {
         // Some requests bypass the middleware (e.g. React Router's `/__manifest` route discovery),
@@ -99,7 +99,7 @@ export function writeCroctCookies(response: Response, context: CroctContext): vo
         return;
     }
 
-    const env = getEnv(context);
+    const env = getEnv(scope);
 
     setCookie(response, request.userToken, getUserTokenCookieOptions(env));
     setCookie(response, request.clientId, getClientIdCookieOptions(env));

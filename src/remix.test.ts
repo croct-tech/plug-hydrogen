@@ -11,7 +11,12 @@ describe('createCroctContext', () => {
                 isLoggedIn: () => Promise.resolve(false),
                 query: () => Promise.resolve({data: {customer: null}}),
             },
-            storefront: {i18n: {language: 'EN', country: 'US'}},
+            storefront: {
+                i18n: {
+                    language: 'EN',
+                    country: 'US',
+                },
+            },
         };
     }
 
@@ -21,7 +26,10 @@ describe('createCroctContext', () => {
 
         expect(croct.preferredLocale).toBe('en-US');
 
-        const loadContext = {...createResolverContext(), croct: croct};
+        const loadContext = {
+            ...createResolverContext(),
+            croct: croct,
+        };
         const response = new Response('ok');
 
         writeCroctCookies(response, loadContext);

@@ -13,22 +13,37 @@ describe('getClientConfig', () => {
     });
 
     it('should resolve the full configuration', () => {
-        expect(getClientConfig({
+        const config = getClientConfig({
             PUBLIC_CROCT_APP_ID: appId,
             PUBLIC_CROCT_DEBUG: 'true',
             PUBLIC_CROCT_TEST: 'true',
+            PUBLIC_CROCT_TRACK: 'always',
             PUBLIC_CROCT_DEFAULT_PREFERRED_LOCALE: 'en',
             PUBLIC_CROCT_BASE_ENDPOINT_URL: 'https://example.com',
-        })).toEqual({
+        });
+
+        expect(config).toEqual({
             appId: appId,
             debug: true,
             test: true,
+            track: 'always',
             defaultPreferredLocale: 'en',
             baseEndpointUrl: 'https://example.com',
             cookie: {
-                clientId: {name: 'ct.client_id', maxAge: 365 * 24 * 60 * 60, path: '/'},
-                userToken: {name: 'ct.user_token', maxAge: 7 * 24 * 60 * 60, path: '/'},
-                previewToken: {name: 'ct.preview_token', path: '/'},
+                clientId: {
+                    name: 'ct.client_id',
+                    maxAge: 365 * 24 * 60 * 60,
+                    path: '/',
+                },
+                userToken: {
+                    name: 'ct.user_token',
+                    maxAge: 7 * 24 * 60 * 60,
+                    path: '/',
+                },
+                previewToken: {
+                    name: 'ct.preview_token',
+                    path: '/',
+                },
             },
         });
     });

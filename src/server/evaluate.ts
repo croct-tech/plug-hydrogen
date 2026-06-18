@@ -1,6 +1,6 @@
 import type {EvaluationOptions as BaseOptions} from '@croct/plug-react/api';
 import {evaluate as executeQuery} from '@croct/plug-react/api';
-import type {JsonObject, JsonValue} from '@croct/json';
+import type {JsonValue} from '@croct/json';
 import {ConsoleLogger} from '@croct/sdk/logging/consoleLogger';
 import {FilteredLogger} from '@croct/sdk/logging/filteredLogger';
 import {getEnvEntry, getEnvFlag} from '../config/env';
@@ -9,15 +9,14 @@ import {getDefaultFetchTimeout} from '../config/timeout';
 import {type CroctContext, getEnv, getRequestContext} from '../config/context';
 
 export type EvaluationOptions<T extends JsonValue = JsonValue> =
-    Omit<BaseOptions<T>, 'apiKey' | 'appId' | 'context'> & {
-        context: CroctContext,
-        attributes?: JsonObject,
+    Omit<BaseOptions<T>, 'apiKey' | 'appId'> & {
+        scope: CroctContext,
     };
 
 export async function evaluate<T extends JsonValue>(query: string, options: EvaluationOptions<T>): Promise<T> {
-    const {context, attributes, logger, ...rest} = options;
-    const env = getEnv(context);
-    const request = getRequestContext(context);
+    const {scope, context, logger, ...rest} = options;
+    const env = getEnv(scope);
+    const request = getRequestContext(scope, true);
     const timeout = getDefaultFetchTimeout(env);
 
     return executeQuery<T>(query, {
@@ -39,11 +38,12 @@ export async function evaluate<T extends JsonValue>(query: string, options: Eval
         ),
         ...rest,
         context: {
+            ...context,
             page: {
+                ...context?.page,
                 url: request.uri,
                 ...(request.referrer !== null && {referrer: request.referrer}),
             },
-            ...(attributes !== undefined && {attributes: attributes}),
         },
     });
 }

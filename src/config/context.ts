@@ -1,3 +1,5 @@
+import {createContext} from 'react-router';
+import type {RouterContextProvider} from 'react-router';
 import type {Env} from './env';
 
 /**
@@ -29,6 +31,19 @@ export type CroctContext = {
 };
 
 /**
+ * React Router 7 forbids mutating the load context, so the middleware stores the request context in
+ * its type-safe context map under this key (an immutable token, like `React.createContext`). The
+ * Remix-v2 era has no such map and instead carries the value as a plain `croct` property.
+ *
+ * @internal
+ */
+export const requestContextKey = createContext<RequestContext | null>(null);
+
+function isRouterContext(context: CroctContext): context is RouterContextProvider {
+    return 'get' in context && typeof context.get === 'function';
+}
+
+/**
  * @internal
  */
 export function getEnv(context: CroctContext): Env {
@@ -38,10 +53,20 @@ export function getEnv(context: CroctContext): Env {
 /**
  * @internal
  */
-export function getRequestContext(context: CroctContext): RequestContext {
-    const request = context.croct ?? null;
+export function getRequestContext(context: CroctContext, required?: false): RequestContext | null;
 
-    if (request === null) {
+/**
+ * @internal
+ */
+export function getRequestContext(context: CroctContext, required: true): RequestContext;
+
+/**
+ * @internal
+ */
+export function getRequestContext(context: CroctContext, required = false): RequestContext | null {
+    const request = (isRouterContext(context) ? context.get(requestContextKey) : context.croct) ?? null;
+
+    if (request === null && required) {
         throw new Error(
             'Croct\'s request context is missing. Did you configure Croct\'s middleware '
             + '(React Router) or `createCroctContext` (Remix)? '

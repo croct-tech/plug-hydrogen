@@ -11,8 +11,8 @@ import {getDefaultFetchTimeout} from '../config/timeout';
 import {type CroctContext, getEnv, getRequestContext} from '../config/context';
 
 export type FetchOptions<T extends JsonObject = JsonObject> =
-    Omit<DynamicContentOptions<T>, 'apiKey' | 'appId' | 'context'> & {
-        context: CroctContext,
+    Omit<DynamicContentOptions<T>, 'apiKey' | 'appId'> & {
+        scope: CroctContext,
     };
 
 export type {FetchResponse} from '@croct/plug-react/api';
@@ -25,9 +25,9 @@ export async function fetchContent<
     slotId: I,
     options: Pick<O, keyof FetchResponseOptions> & FetchOptions<SlotContent<I, C>>,
 ): Promise<FetchResponse<I, C, never, O>> {
-    const {context, logger, ...rest} = options;
-    const env = getEnv(context);
-    const request = getRequestContext(context);
+    const {scope, context, logger, ...rest} = options;
+    const env = getEnv(scope);
+    const request = getRequestContext(scope, true);
     const timeout = getDefaultFetchTimeout(env);
 
     return loadContent<I, C, O>(slotId, {
@@ -50,7 +50,9 @@ export async function fetchContent<
         ),
         ...rest,
         context: {
+            ...context,
             page: {
+                ...context?.page,
                 url: request.uri,
                 ...(request.referrer !== null && {referrer: request.referrer}),
             },

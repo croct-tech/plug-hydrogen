@@ -18,7 +18,10 @@ describe('anonymize', () => {
     };
 
     function createContext(env: Env, request: RequestContext): CroctContext {
-        return {env: env, croct: request};
+        return {
+            env: env,
+            croct: request,
+        };
     }
 
     it('should re-issue an anonymous user token', async () => {

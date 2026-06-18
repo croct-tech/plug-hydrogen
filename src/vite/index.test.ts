@@ -7,7 +7,7 @@ describe('croct vite plugin', () => {
     type Hook = (...args: unknown[]) => unknown;
 
     const appId = '00000000-0000-0000-0000-000000000000';
-    const mockLoadEnv = loadEnv as jest.Mock;
+    const mockLoadEnv = jest.mocked(loadEnv);
 
     beforeEach(() => {
         mockLoadEnv.mockReturnValue({PUBLIC_CROCT_APP_ID: appId});
@@ -18,7 +18,10 @@ describe('croct vite plugin', () => {
 
         expect(plugin.name).toBe('@croct/plug-hydrogen');
 
-        const result = (plugin.config as unknown as Hook)({}, {mode: 'production', command: 'build'});
+        const result = (plugin.config as unknown as Hook)({}, {
+            mode: 'production',
+            command: 'build',
+        });
 
         expect(mockLoadEnv).toHaveBeenCalledWith('production', expect.any(String), '');
         expect(result).toEqual({optimizeDeps: {exclude: ['@croct/plug-hydrogen']}});
