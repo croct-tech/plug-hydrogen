@@ -1,0 +1,11 @@
+import {issueToken} from '../config/security';
+import {type CroctContext, getEnv, getRequestContext} from '../config/context';
+
+/**
+ * Identifies the current visitor by re-issuing the user token for the given user.
+ */
+export async function identify(userId: string, scope: CroctContext): Promise<void> {
+    const request = getRequestContext(scope, true);
+
+    request.userToken = (await issueToken(getEnv(scope), userId)).toString();
+}
