@@ -77,8 +77,8 @@
   },
   "dependencies": {
     "@croct/json": "^2.1.0",
-    "@croct/plug": "^0.23.0",
-    "@croct/plug-react": "^0.17.0",
+    "@croct/plug": "^0.24.0",
+    "@croct/plug-react": "^0.18.0",
     "@croct/sdk": "^0.22.2",
     "cookie": "^1.1.1"
   },
