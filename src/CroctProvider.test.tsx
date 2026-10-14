@@ -1,5 +1,6 @@
 /**
  * @jest-environment jsdom
+ * @jest-environment-options {"url": "https://www.example.com"}
  */
 import type {ReactNode} from 'react';
 import {render} from '@testing-library/react';
@@ -23,9 +24,11 @@ describe('CroctProvider', () => {
     function renderWith(config: unknown, props: Record<string, unknown> = {}): {
         provider: Record<string, unknown>,
         analytics: Record<string, unknown> | null,
+        script: Record<string, unknown> | null,
     } {
         let provider: Record<string, unknown> = {};
         let analytics: Record<string, unknown> | null = null;
+        let script: Record<string, unknown> | null = null;
 
         jest.isolateModules(() => {
             jest.doMock(
@@ -42,6 +45,17 @@ describe('CroctProvider', () => {
                     __esModule: true,
                     CroctAnalytics: (received: Record<string, unknown>) => {
                         analytics = received;
+
+                        return null;
+                    },
+                }),
+            );
+            jest.doMock(
+                '@shopify/hydrogen',
+                () => ({
+                    __esModule: true,
+                    Script: (received: Record<string, unknown>) => {
+                        script = received;
 
                         return null;
                     },
@@ -68,6 +82,7 @@ describe('CroctProvider', () => {
         return {
             provider: provider,
             analytics: analytics,
+            script: script,
         };
     }
 
@@ -215,5 +230,75 @@ describe('CroctProvider', () => {
                 disableLinkOpened: true,
             },
         });
+    });
+
+    it('should load the Shopify pixel plugin sharing the cookie with the checkout domain', () => {
+        const {provider, script} = renderWith({
+            appId: 'app',
+            cookie: cookie,
+            shopifyPixel: {checkoutDomain: 'checkout.example.com'},
+        });
+
+        expect(provider.plugins).toEqual({
+            'shopify-pixel': {cookie: {domain: 'example.com'}},
+            autoTracking: {disableProductViewed: true},
+        });
+
+        expect(script).toEqual({
+            src: 'https://cdn.croct.io/plug-integration/shopify-pixel.js',
+            async: true,
+        });
+    });
+
+    it('should load the Shopify pixel plugin with the configured cookie domain', () => {
+        const {provider} = renderWith({
+            appId: 'app',
+            cookie: cookie,
+            shopifyPixel: {cookieDomain: 'shop.example.com'},
+        });
+
+        expect(provider.plugins).toEqual({
+            'shopify-pixel': {cookie: {domain: 'shop.example.com'}},
+            autoTracking: {disableProductViewed: true},
+        });
+    });
+
+    it('should load the Shopify pixel plugin with a host-only cookie when no domain is shared', () => {
+        const {provider} = renderWith({
+            appId: 'app',
+            cookie: cookie,
+            shopifyPixel: {checkoutDomain: 'example.myshopify.com'},
+        });
+
+        expect(provider.plugins).toEqual({
+            'shopify-pixel': {},
+            autoTracking: {disableProductViewed: true},
+        });
+    });
+
+    it('should let the plugins prop override the Shopify pixel plugin options', () => {
+        const {provider} = renderWith(
+            {
+                appId: 'app',
+                cookie: cookie,
+                shopifyPixel: {cookieDomain: 'example.com'},
+            },
+            {plugins: {'shopify-pixel': {cookie: {domain: 'shop.example.com'}}}},
+        );
+
+        expect(provider.plugins).toEqual({
+            'shopify-pixel': {cookie: {domain: 'shop.example.com'}},
+            autoTracking: {disableProductViewed: true},
+        });
+    });
+
+    it('should not load the Shopify pixel plugin when disabled', () => {
+        const {provider, script} = renderWith({
+            appId: 'app',
+            cookie: cookie,
+        });
+
+        expect(provider.plugins).toEqual({autoTracking: {disableProductViewed: true}});
+        expect(script).toBeNull();
     });
 });
