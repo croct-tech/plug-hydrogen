@@ -3,6 +3,8 @@ import {getEnvEntry, getEnvFlag} from './env';
 import {getAppId} from './appId';
 import type {CookieOptions} from './cookie';
 import {getClientIdCookieOptions, getPreviewCookieOptions, getUserTokenCookieOptions} from './cookie';
+import type {ShopifyPixelConfig} from './shopifyPixel';
+import {getShopifyPixelConfig} from './shopifyPixel';
 import {getDefaultFetchTimeout} from './timeout';
 import type {TrackingMode} from './tracking';
 import {getTrackingMode} from './tracking';
@@ -25,6 +27,7 @@ export type ClientConfig = {
         userToken: CookieOptions,
         previewToken: CookieOptions,
     },
+    shopifyPixel?: ShopifyPixelConfig,
 };
 
 /**
@@ -33,6 +36,7 @@ export type ClientConfig = {
 export function getClientConfig(env: Env): ClientConfig {
     const timeout = getDefaultFetchTimeout(env);
     const track = getTrackingMode(env);
+    const shopifyPixel = getShopifyPixelConfig(env);
 
     return {
         appId: getAppId(env),
@@ -47,5 +51,6 @@ export function getClientConfig(env: Env): ClientConfig {
             userToken: getUserTokenCookieOptions(env),
             previewToken: getPreviewCookieOptions(env),
         },
+        ...(shopifyPixel !== undefined && {shopifyPixel: shopifyPixel}),
     };
 }

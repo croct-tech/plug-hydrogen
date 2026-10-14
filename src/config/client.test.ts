@@ -56,6 +56,17 @@ describe('getClientConfig', () => {
         expect(config).not.toHaveProperty('defaultPreferredLocale');
         expect(config).not.toHaveProperty('baseEndpointUrl');
         expect(config).not.toHaveProperty('defaultFetchTimeout');
+        expect(config).not.toHaveProperty('shopifyPixel');
+    });
+
+    it('should include the Shopify pixel configuration when enabled', () => {
+        const config = getClientConfig({
+            PUBLIC_CROCT_APP_ID: appId,
+            PUBLIC_CROCT_SHOPIFY_PIXEL: 'true',
+            PUBLIC_CHECKOUT_DOMAIN: 'checkout.example.com',
+        });
+
+        expect(config.shopifyPixel).toEqual({checkoutDomain: 'checkout.example.com'});
     });
 
     it('should include the default fetch timeout in production', () => {
